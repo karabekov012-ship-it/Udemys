@@ -8,6 +8,11 @@ from .serializers import (UserProfileListSerializer, UserProfileDetailSerializer
                           ReviewCreateSerializer, CertificateSerializer, ExamSerializer,
                           CreateCourseSerializer, UserSerializer, LoginSerializer)
 from rest_framework import viewsets, generics, status
+from rest_framework.filters import SearchFilter, OrderingFilter
+from django_filters.rest_framework import DjangoFilterBackend
+from .filters import CourseFilter
+from .pagination import CoursePagination
+from .permission import CheckStatusPermission, CreateCoursePermission
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -87,14 +92,17 @@ class SubCategoryDetailAPIView(generics.RetrieveAPIView):
 class CourseListAPIView(generics.ListAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseListSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ['course_name']
+    filterset_class = CourseFilter
     ordering_fields = ['price']
-
+    pagination_class = CoursePagination
 
 
 class CreateCourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CreateCourseSerializer
+    permission_classes = [CreateCoursePermission]
 
     def get_queryset(self):
         return Course.objects.filter(teacher=self.request.user)
@@ -113,6 +121,7 @@ class ExamViewSet(viewsets.ModelViewSet):
 class ReviewCreateAPIView(generics.CreateAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewCreateSerializer
+    permission_classes = [CheckStatusPermission]
 
     def get_queryset(self):
         return Review.objects.filter(user=self.request.user)
@@ -121,6 +130,7 @@ class ReviewCreateAPIView(generics.CreateAPIView):
 class ReviewEditAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewCreateSerializer
+    permission_classes = [CheckStatusPermission]
 
     def get_queryset(self):
         return Review.objects.filter(user=self.request.user)
@@ -129,6 +139,7 @@ class ReviewEditAPIView(generics.RetrieveUpdateDestroyAPIView):
 class CertificateViewSet(viewsets.ModelViewSet):
     queryset = Certificate.objects.all()
     serializer_class = CertificateSerializer
+    permission_classes = [CheckStatusPermission]
 
     def get_queryset(self):
         return Review.objects.filter(student=self.request.user)
